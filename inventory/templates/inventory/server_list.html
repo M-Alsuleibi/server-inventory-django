@@ -1,0 +1,57 @@
+{% extends "inventory/base.html" %}
+
+{% block title %}Server List{% endblock %}
+
+{% block content %}
+<h1>Server Inventory</h1>
+
+{% if servers %}
+<table>
+    <thead>
+        <tr>
+            <th>Hostname</th>
+            <th>IP Address</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for server in servers %}
+        <tr>
+            <td>{{ server.hostname }}</td>
+            <td>{{ server.ip_address }}</td>
+            <td>
+                <span class="badge {{ server.status }}">
+                    {{ server.status }}
+                </span>
+            </td>
+            <td>{{ server.created_at|date:"Y-m-d H:i" }}</td>
+            <td>
+                <!-- Toggle -->
+                <form method="post"
+                      action="{% url 'inventory:server_toggle' server.pk %}"
+                      style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning">
+                        {% if server.status == 'running' %}Stop{% else %}Start{% endif %}
+                    </button>
+                </form>
+
+                <!-- Delete -->
+                <form method="post"
+                      action="{% url 'inventory:server_delete' server.pk %}"
+                      style="display:inline;"
+                      onsubmit="return confirm('Delete {{ server.hostname }}?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+    <p>No servers found. <a href="{% url 'inventory:server_add' %}">Add one.</a></p>
+{% endif %}
+{% endblock %}
