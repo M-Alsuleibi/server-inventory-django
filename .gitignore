@@ -17,8 +17,7 @@ db.sqlite3
 media/
 
 # Environment secrets
-.env
-
+.env*
 # macOS
 .DS_Store
 
