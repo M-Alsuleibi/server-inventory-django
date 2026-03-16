@@ -35,6 +35,8 @@ RUN dnf install -y https://repo.mysql.com/mysql84-community-release-el9-3.noarch
     && dnf install -y mysql-community-libs \
     && dnf clean all
 
+RUN useradd -r -s /sbin/nologin appuser
+
 COPY --from=builder /app/venv /app/venv
 
 WORKDIR /app

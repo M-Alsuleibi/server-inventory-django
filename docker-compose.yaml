@@ -4,45 +4,43 @@ services:
   db:
     image: mysql:8.0
     restart: unless-stopped
-
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE:      ${DB_NAME}
       MYSQL_USER:          ${DB_USER}
       MYSQL_PASSWORD:      ${DB_PASSWORD}
-
     volumes:
       - mysql_data:/var/lib/mysql
-
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "--password=${DB_ROOT_PASSWORD}"]
-      interval: 10s   # check every 10 seconds
-      timeout: 5s     # fail if no response in 5 seconds
-      retries: 5      # mark unhealthy after 5 failures
-      start_period: 30s  # give MySQL 30s to initialize before health checks start
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-
-  web:
+  migrate:
     build: .
-
-    restart: unless-stopped
-
-    ports:
-      - "8000:80"
-
-    env_file:
-      - .env.docker
-
-    volumes:
-      - static_files:/app/staticfiles
-
+    entrypoint: ["python", "manage.py", "migrate", "--noinput"]
+    restart: no
     depends_on:
       db:
         condition: service_healthy
+    env_file:
+      - .env.docker
 
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    env_file:
+      - .env.docker
+    volumes:
+      - mysql_data:/var/lib/mysql
 
 volumes:
   mysql_data:
-    driver: local
-  static_files:
     driver: local

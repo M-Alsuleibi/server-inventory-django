@@ -17,5 +17,7 @@ exec mod_wsgi-express start-server \
   --port 80 \
   --processes 2 \
   --threads 5 \
+  --user appuser \
+  --group appuser \
   --url-alias /static/ /app/staticfiles/ \
   server_inventory/wsgi.py
