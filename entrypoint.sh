@@ -1,7 +1,5 @@
 #!/bin/bash
 python3 manage.py collectstatic --noinput
-python3 manage.py migrate --noinput
-
 # echo "Creating superuser if not exists..."
 # python3 manage.py shell -c "
 # from django.contrib.auth import get_user_model
@@ -14,4 +12,10 @@ python3 manage.py migrate --noinput
 # "
 # docker compose exec web python3 manage.py createsuperuser
 
-exec httpd -D FOREGROUND
+exec mod_wsgi-express start-server \
+  --host 0.0.0.0 \
+  --port 80 \
+  --processes 2 \
+  --threads 5 \
+  --url-alias /static/ /app/staticfiles/ \
+  server_inventory/wsgi.py

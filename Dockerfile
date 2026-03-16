@@ -1,35 +1,44 @@
-FROM amazonlinux:2023 AS builder
+FROM amazonlinux:2023 AS base
 
 RUN dnf install -y \
-    python3-pip \
-    gcc \
-    python3-devel \
-    httpd-devel \
-    python3-setuptools \
-    mariadb-connector-c-devel \
+    python3.13 \
+    httpd \
     && dnf clean all
+
+ENV PATH=/app/venv/bin:$PATH
+
+FROM base AS builder
+
+RUN dnf install -y \
+    python3.13-pip \
+    python3.13-devel \
+    python3.13-setuptools \
+    gcc \
+    httpd-devel \
+    pkgconfig \
+    openssl-devel \
+    && dnf install -y https://repo.mysql.com/mysql84-community-release-el9-3.noarch.rpm \
+    && sed -i 's/\$releasever/9/g' /etc/yum.repos.d/mysql*.repo \
+    && dnf install -y mysql-community-devel \
+    && dnf clean all
+
+RUN python3.13 -m venv /app/venv
 
 COPY requirements.txt .
-RUN pip3 install --no-warn-script-location mod_wsgi
-RUN pip3 install --no-warn-script-location -r requirements.txt
+RUN pip install mod_wsgi
+RUN pip install -r requirements.txt
 
-FROM amazonlinux:2023
+FROM base AS runtime
 
-RUN dnf install -y \
-    python3 \
-    httpd \
-    mariadb-connector-c \
+RUN dnf install -y https://repo.mysql.com/mysql84-community-release-el9-3.noarch.rpm \
+    && sed -i 's/\$releasever/9/g' /etc/yum.repos.d/mysql*.repo \
+    && dnf install -y mysql-community-libs \
     && dnf clean all
 
-ENV PYTHONPATH=/usr/local/lib/python3.9/site-packages:/usr/local/lib64/python3.9/site-packages
-
-COPY --from=builder /usr/local/lib/python3.9/site-packages/ /usr/local/lib/python3.9/site-packages/
-COPY --from=builder /usr/local/lib64/python3.9/site-packages/ /usr/local/lib64/python3.9/site-packages/
+COPY --from=builder /app/venv /app/venv
 
 WORKDIR /app
 COPY . .
-
-COPY wsgi.conf /etc/httpd/conf.d/wsgi.conf
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
