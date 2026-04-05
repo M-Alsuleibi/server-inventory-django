@@ -1,0 +1,38 @@
+version: 0.0
+os: linux
+hooks:
+  BeforeInstall:
+    - location: scripts/stop_container.sh
+      timeout: 60
+      runas: root
+  AfterInstall:
+    - location: scripts/start_container.sh
+      timeout: 120
+      runas: root
+  ValidateService:
+    - location: scripts/validate.sh
+      timeout: 30
+      runas: root
+
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /app/deployment
+hooks:
+  ApplicationStop:
+    - location: scripts/stop_container.sh
+      timeout: 30
+      runas: root
+  BeforeInstall:
+    - location: scripts/ecr_login.sh
+      timeout: 120
+      runas: root
+  ApplicationStart:
+    - location: scripts/start_container.sh
+      timeout: 180
+      runas: root
+  ValidateService:
+    - location: scripts/validate.sh
+      timeout: 60
+      runas: root

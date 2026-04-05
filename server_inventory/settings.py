@@ -10,14 +10,34 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 import os
-from dotenv import load_dotenv
+import json
+import boto3
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Load .env into os.environ
 load_dotenv()
 
+def get_secret(secret_name, region="us-east-1"):
+    client = boto3.client("secretsmanager", region_name=region)
+    response = client.get_secret_value(SecretId=secret_name)
+    return json.loads(response["SecretString"])
+
+def get_ssm(param_name, region="us-east-1"):
+    client = boto3.client("ssm", region_name=region)
+    response = client.get_parameter(Name=param_name, WithDecryption=True)
+    return response["Parameter"]["Value"]
+
+# In prod containers, set FETCH_SECRETS=true
+if os.environ.get("FETCH_SECRETS") == "true":
+    _secrets = get_secret("task2/db/credentials")
+    os.environ["DB_USER"] = _secrets["username"]
+    os.environ["DB_PASSWORD"] = _secrets["password"]
+    os.environ["DB_HOST"] = get_ssm("/task2/db/host")
+    os.environ["DB_PORT"] = get_ssm("/task2/db/port")
+    os.environ["DB_NAME"] = get_ssm("/task2/db/name")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
